@@ -1,0 +1,6 @@
+services:
+  eventconsumer:
+    image: ${DOCKER_REGISTRY-}eventconsumer:prod
+    build:
+      context: .
+      dockerfile: EventConsumer/Dockerfile

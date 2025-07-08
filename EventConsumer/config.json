@@ -1,0 +1,8 @@
+{ 
+  "Queues": [
+    {
+      "QueueName": "marketpull_data",
+      "ApiEndpoint": "http://localhost:5245/api/Tickers/AddCandles"
+    }
+  ]
+}

@@ -7,7 +7,8 @@
     <ProjectGuid>7b5a6ad5-0e69-4013-9d77-8ac47ddef894</ProjectGuid>
     <DockerLaunchAction>LaunchBrowser</DockerLaunchAction>
     <DockerServiceUrl>{Scheme}://localhost:{ServicePort}</DockerServiceUrl>
-    <DockerServiceName>eventconsumer</DockerServiceName>
+    <DockerServiceName>eventconsumer.api</DockerServiceName>
+	<DockerComposeProjectName>eventconsumer</DockerComposeProjectName>
   </PropertyGroup>
   <ItemGroup>
     <None Include="docker-compose.override.yml">

@@ -1,4 +1,4 @@
-﻿namespace EventConsumer.Queue
+﻿namespace EventConsumer.Queues
 {
     public class ConsumerConfig
     {

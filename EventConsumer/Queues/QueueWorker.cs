@@ -1,18 +1,17 @@
-﻿using EventConsumer.Queue;
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Text;
 
 namespace EventConsumer.Queues
 {
-    public class QueueWorker(IOptions<RabbitMqServerSettings> consumerSettingsOptions, QueuePair queuePair, HttpClient httpClient, CancellationToken cancellationToken)
+    public class QueueWorker(IOptions<RabbitMqServerSettings> consumerSettingsOptions, QueuePair queuePair, HttpClient httpClient, ILogger<QueueWorker> logger, CancellationToken cancellationToken)
     {
         public async Task StartAsync()
         {
             var consumerSettings = consumerSettingsOptions.Value;
 
-            Console.WriteLine($"Starting QueueWorker for queue: {queuePair.QueueName}");
+            logger.LogInformation("Starting QueueWorker for queue: {QueueName}", queuePair.QueueName);
 
             var factory = new ConnectionFactory()
             {
@@ -21,13 +20,13 @@ namespace EventConsumer.Queues
                 UserName = consumerSettings.Username,
                 Password = consumerSettings.Password
             };
-            Console.WriteLine($"Connecting to RabbitMQ server at {consumerSettings.Server}:{consumerSettings.ServerPort}");
+            logger.LogInformation("Connecting to RabbitMQ server at {Server}:{Port}", consumerSettings.Server, consumerSettings.ServerPort);
 
             var connection = await factory.CreateConnectionAsync();
-            Console.WriteLine("RabbitMQ connection established.");
+            logger.LogInformation("RabbitMQ connection established.");
 
             using var channel = await connection.CreateChannelAsync();
-            Console.WriteLine($"Channel created for queue: {queuePair.QueueName}");
+            logger.LogInformation("Channel created for queue: {QueueName}", queuePair.QueueName);
 
             await channel.QueueDeclareAsync(
                 queue: queuePair.QueueName,
@@ -35,7 +34,7 @@ namespace EventConsumer.Queues
                 exclusive: false,
                 autoDelete: false,
                 arguments: null);
-            Console.WriteLine($"Queue declared: {queuePair.QueueName}");
+            logger.LogInformation("Queue declared: {QueueName}", queuePair.QueueName);
 
             var consumer = new AsyncEventingBasicConsumer(channel);
             consumer.ReceivedAsync += async (model, ea) =>
@@ -43,7 +42,7 @@ namespace EventConsumer.Queues
                 var body = ea.Body.ToArray();
                 var message = Encoding.UTF8.GetString(body);
 
-                Console.WriteLine($"[{queuePair.QueueName}] Received message: {message}");
+                logger.LogInformation("[{QueueName}] Received message: {Message}", queuePair.QueueName, message);
 
                 var response = await httpClient.PostAsync(
                     queuePair.ApiEndpoint,
@@ -52,11 +51,11 @@ namespace EventConsumer.Queues
 
                 if (response.IsSuccessStatusCode)
                 {
-                    Console.WriteLine($"[{queuePair.QueueName}] Message processed successfully: {message}");
+                    logger.LogInformation("[{QueueName}] Message processed successfully: {Message}", queuePair.QueueName, message);
                 }
                 else
                 {
-                    Console.WriteLine($"[{queuePair.QueueName}] Failed to process message: {message}. Response: {response.StatusCode}");
+                    logger.LogWarning("[{QueueName}] Failed to process message: {Message}. Response: {StatusCode}", queuePair.QueueName, message, response.StatusCode);
                 }
             };
 
@@ -64,7 +63,7 @@ namespace EventConsumer.Queues
                 queue: queuePair.QueueName,
                 autoAck: true,
                 consumer: consumer);
-            Console.WriteLine($"Started consuming messages from queue: {queuePair.QueueName}");
+            logger.LogInformation("Started consuming messages from queue: {QueueName}", queuePair.QueueName);
 
             // Keep the worker alive until cancellation is requested  
             try
@@ -73,7 +72,7 @@ namespace EventConsumer.Queues
             }
             catch (TaskCanceledException)
             {
-                Console.WriteLine($"QueueWorker for queue {queuePair.QueueName} is shutting down gracefully.");
+                logger.LogInformation("QueueWorker for queue {QueueName} is shutting down gracefully.", queuePair.QueueName);
             }
         }
     }

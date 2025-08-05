@@ -4,16 +4,17 @@
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
 USER $APP_UID
 WORKDIR /app
+EXPOSE 5657
 
 # This stage is used to build the service project
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["EventConsumer/EventConsumer.csproj", "EventConsumer/"]
-RUN dotnet restore "./EventConsumer/EventConsumer.csproj"
+COPY EventConsumer.csproj .
+RUN dotnet restore "EventConsumer.csproj"
 COPY . .
-WORKDIR "/src/EventConsumer"
-RUN dotnet build "./EventConsumer.csproj" -c $BUILD_CONFIGURATION -o /app/build
+WORKDIR "/src/"
+RUN dotnet build "EventConsumer.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 # This stage is used to publish the service project to be copied to the final stage
 FROM build AS publish
